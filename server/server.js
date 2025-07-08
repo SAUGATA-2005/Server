@@ -1,3 +1,5 @@
+require('dotenv').config(); // Load .env variables
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -7,10 +9,10 @@ const path = require('path');
 
 const Customer = require('./models/Customer');
 const Restaurant = require('./models/Restaurant');
-const Admin = require('./models/Admin'); // ✅ Admin model added
+const Admin = require('./models/Admin');
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
@@ -19,7 +21,7 @@ app.use(express.json());
 // Setup multer for photo uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/');  // Make sure this folder exists!
+    cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + path.extname(file.originalname));
@@ -30,14 +32,14 @@ const upload = multer({ storage });
 // Serve static files from uploads folder
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Connect to MongoDB
-mongoose.connect('mongodb://127.0.0.1:27017/bookmytable', {
+// MongoDB connection
+mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 }).then(() => console.log('✅ MongoDB connected'))
   .catch(err => console.error('❌ MongoDB connection error:', err));
 
-// ----------- Customer Signup -----------
+// ---------- Customer Signup ----------
 app.post('/signup', async (req, res) => {
   try {
     const { name, phone, password } = req.body;
@@ -54,7 +56,7 @@ app.post('/signup', async (req, res) => {
   }
 });
 
-// ----------- Customer Login -----------
+// ---------- Customer Login ----------
 app.post('/login', async (req, res) => {
   try {
     const { phone, password } = req.body;
@@ -70,7 +72,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// ----------- Restaurant Signup -----------
+// ---------- Restaurant Signup ----------
 app.post('/rsignup', upload.single('photo'), async (req, res) => {
   try {
     const { name, city, menu, contact, password } = req.body;
@@ -99,7 +101,7 @@ app.post('/rsignup', upload.single('photo'), async (req, res) => {
   }
 });
 
-// ----------- Restaurant Login -----------
+// ---------- Restaurant Login ----------
 app.post('/rlogin', async (req, res) => {
   try {
     const { contact, password } = req.body;
@@ -115,16 +117,13 @@ app.post('/rlogin', async (req, res) => {
   }
 });
 
+// ---------- Admin Login (plain password check) ----------
 app.post('/adminlogin', async (req, res) => {
   try {
     const { username, password } = req.body;
-
     const admin = await Admin.findOne({ username });
-    if (!admin) {
-      return res.status(400).json({ message: 'Invalid admin credentials' });
-    }
+    if (!admin) return res.status(400).json({ message: 'Invalid admin credentials' });
 
-    // Plain text check (no bcrypt)
     if (admin.password !== password) {
       return res.status(400).json({ message: 'Invalid admin credentials' });
     }
@@ -135,7 +134,6 @@ app.post('/adminlogin', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
-
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
