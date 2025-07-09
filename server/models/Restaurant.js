@@ -8,11 +8,11 @@ const menuItemSchema = new mongoose.Schema({
 const restaurantSchema = new mongoose.Schema({
   name: { type: String, required: true },
   city: { type: String, required: true },
-  photo: { type: String }, // store image as base64 or URL
+  photo: { type: String },
   menu: [menuItemSchema],
   contact: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  tables: { type: Number, required: true } // ✅ Add this field
+  tables: { type: Number, required: true }  // 👈 add this
 });
 
 module.exports = mongoose.model('Restaurant', restaurantSchema);
