@@ -108,7 +108,7 @@ app.post('/rsignup', upload.single('photo'), async (req, res) => {
   console.log('📸 Uploaded file:', req.file);
 
   try {
-    const { name, city, menu, contact, password } = req.body;
+    const { name, city, menu, contact, password, tables } = req.body;
     const photo = req.file ? req.file.path : null;
 
     const parsedMenu = menu ? JSON.parse(menu) : [];
@@ -124,6 +124,7 @@ app.post('/rsignup', upload.single('photo'), async (req, res) => {
       menu: parsedMenu,
       contact,
       password: hashedPassword,
+      tables: Number(tables), // ✅ Save it properly as number
     });
 
     await newRestaurant.save();
