@@ -14,17 +14,26 @@ const Admin = require('./models/Admin');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const allowedOrigins = ['http://localhost:3000', 'https://your-frontend-domain.com'];
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://project-bookmytable.netlify.app'
+];
+
 
 app.use(cors({
-  origin: function(origin, callback) {
+  origin: (origin, callback) => {
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'https://project-bookmytable.netlify.app'
+    ];
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.log(`❌ CORS blocked: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true
+  credentials: true,
 }));
 
 app.use(express.json());
@@ -162,4 +171,15 @@ app.post('/adminlogin', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+});
+// ---------- Get Restaurants by City ----------
+app.get('/restaurants', async (req, res) => {
+  const { city } = req.query;
+  try {
+    const list = await Restaurant.find({ city });
+    res.json(list);
+  } catch (err) {
+    console.error('❌ Error fetching restaurants:', err);
+    res.status(500).json({ message: 'Failed to fetch restaurants' });
+  }
 });
