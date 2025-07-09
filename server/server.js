@@ -1,4 +1,4 @@
-require('dotenv').config(); // Load .env variables
+require('dotenv').config();
 
 const express = require('express');
 const mongoose = require('mongoose');
@@ -10,6 +10,7 @@ const path = require('path');
 const Customer = require('./models/Customer');
 const Restaurant = require('./models/Restaurant');
 const Admin = require('./models/Admin');
+const Booking = require('./models/Booking'); // ✅ new
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -19,13 +20,8 @@ const allowedOrigins = [
   'https://project-bookmytable.netlify.app'
 ];
 
-
 app.use(cors({
   origin: (origin, callback) => {
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'https://project-bookmytable.netlify.app'
-    ];
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -38,7 +34,7 @@ app.use(cors({
 
 app.use(express.json());
 
-// Setup multer for photo uploads
+// ---------- Multer Setup ----------
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads/');
@@ -49,10 +45,9 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// Serve static files from uploads folder
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// MongoDB connection
+// ---------- MongoDB Connection ----------
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -62,10 +57,7 @@ mongoose.connect(process.env.MONGO_URI, {
 // ---------- Customer Signup ----------
 app.post('/signup', async (req, res) => {
   try {
-    console.log('📩 Received signup data:', req.body);
-
     const { name, phone, password } = req.body;
-
     if (!name || !phone || !password) {
       return res.status(400).json({ message: 'All fields are required' });
     }
@@ -77,8 +69,6 @@ app.post('/signup', async (req, res) => {
     const newCustomer = new Customer({ name, phone, password: hashedPassword });
 
     await newCustomer.save();
-
-    console.log('✅ New customer saved:', newCustomer);
     res.status(201).json({ message: 'Registered successfully' });
   } catch (err) {
     console.error('❌ Signup error:', err);
@@ -104,9 +94,6 @@ app.post('/login', async (req, res) => {
 
 // ---------- Restaurant Signup ----------
 app.post('/rsignup', upload.single('photo'), async (req, res) => {
-  console.log('📥 Incoming restaurant signup data:', req.body);
-  console.log('📸 Uploaded file:', req.file);
-
   try {
     const { name, city, menu, contact, password, tables } = req.body;
     const photo = req.file ? req.file.path : null;
@@ -124,11 +111,10 @@ app.post('/rsignup', upload.single('photo'), async (req, res) => {
       menu: parsedMenu,
       contact,
       password: hashedPassword,
-      tables: Number(tables), // ✅ Save it properly as number
+      tables: Number(tables),
     });
 
     await newRestaurant.save();
-    console.log('✅ New restaurant saved:', newRestaurant);
     res.status(201).json({ message: 'Restaurant registered successfully' });
   } catch (err) {
     console.error('❌ Restaurant signup error:', err);
@@ -152,7 +138,7 @@ app.post('/rlogin', async (req, res) => {
   }
 });
 
-// ---------- Admin Login (plain password check) ----------
+// ---------- Admin Login ----------
 app.post('/adminlogin', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -170,9 +156,6 @@ app.post('/adminlogin', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-});
 // ---------- Get Restaurants by City ----------
 app.get('/restaurants', async (req, res) => {
   const { city } = req.query;
@@ -184,7 +167,8 @@ app.get('/restaurants', async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch restaurants' });
   }
 });
-// ---------- Book Table ----------
+
+// ---------- Book Table (Update Restaurant) ----------
 app.post('/book-table', async (req, res) => {
   const { restaurantId } = req.body;
 
@@ -204,4 +188,24 @@ app.post('/book-table', async (req, res) => {
     console.error('❌ Booking error:', err);
     res.status(500).json({ message: 'Booking failed' });
   }
+});
+
+// ---------- Book Table (Store in DB) ----------
+app.post('/book', async (req, res) => {
+  try {
+    const { customerPhone, restaurantName, city, date, menu } = req.body;
+
+    const booking = new Booking({ customerPhone, restaurantName, city, date, menu });
+    await booking.save();
+
+    res.status(201).json({ message: 'Booking stored successfully' });
+  } catch (err) {
+    console.error('❌ Booking storage error:', err);
+    res.status(500).json({ message: 'Failed to store booking' });
+  }
+});
+
+// ---------- Start Server ----------
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
