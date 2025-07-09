@@ -195,7 +195,6 @@ app.post('/book', async (req, res) => {
   try {
     const { customerPhone, restaurantName, city, date, menu } = req.body;
 
-    // ✅ Check for duplicate booking
     const alreadyBooked = await Booking.findOne({
       customerPhone,
       restaurantName,
@@ -229,6 +228,48 @@ app.get('/bookings', async (req, res) => {
   } catch (err) {
     console.error('❌ Fetch bookings error:', err);
     res.status(500).json({ message: 'Failed to fetch bookings' });
+  }
+});
+
+// ---------- Get Restaurant by Contact ----------
+app.get('/restaurant', async (req, res) => {
+  try {
+    const { contact } = req.query;
+    const restaurant = await Restaurant.findOne({ contact });
+    if (!restaurant) return res.status(404).json({ message: 'Restaurant not found' });
+    res.json(restaurant);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch restaurant' });
+  }
+});
+
+// ---------- Get Bookings for a Restaurant ----------
+app.get('/bookings-restaurant', async (req, res) => {
+  try {
+    const { contact } = req.query;
+    const restaurant = await Restaurant.findOne({ contact });
+    if (!restaurant) return res.status(404).json({ message: 'Restaurant not found' });
+
+    const bookings = await Booking.find({ restaurantName: restaurant.name });
+    res.json(bookings);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch bookings' });
+  }
+});
+
+// ---------- Add Menu Item ----------
+app.post('/add-menu-item', async (req, res) => {
+  try {
+    const { contact, item } = req.body;
+    const restaurant = await Restaurant.findOne({ contact });
+    if (!restaurant) return res.status(404).json({ message: 'Restaurant not found' });
+
+    restaurant.menu.push(item);
+    await restaurant.save();
+
+    res.status(200).json({ message: 'Menu item added successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to add menu item' });
   }
 });
 
