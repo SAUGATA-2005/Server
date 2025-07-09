@@ -11,7 +11,8 @@ const restaurantSchema = new mongoose.Schema({
   photo: { type: String }, // store image as base64 or URL
   menu: [menuItemSchema],
   contact: { type: String, required: true, unique: true },
-  password: { type: String, required: true }
+  password: { type: String, required: true },
+  tables: { type: Number, required: true } // ✅ Add this field
 });
 
 module.exports = mongoose.model('Restaurant', restaurantSchema);
