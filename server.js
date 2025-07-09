@@ -14,18 +14,17 @@ const Admin = require('./models/Admin');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const allowedOrigins = ['http://localhost:3000', 'https://your-frontend-domain.com'];
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://project-bookmytable.netlify.app'
+];
+
 
 app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
+  origin: allowedOrigins,
+  credentials: true,
 }));
+
 
 app.use(express.json());
 
@@ -95,6 +94,9 @@ app.post('/login', async (req, res) => {
 
 // ---------- Restaurant Signup ----------
 app.post('/rsignup', upload.single('photo'), async (req, res) => {
+  console.log('📥 Incoming restaurant signup data:', req.body);
+  console.log('📸 Uploaded file:', req.file);
+
   try {
     const { name, city, menu, contact, password } = req.body;
     const photo = req.file ? req.file.path : null;
@@ -115,10 +117,11 @@ app.post('/rsignup', upload.single('photo'), async (req, res) => {
     });
 
     await newRestaurant.save();
+    console.log('✅ New restaurant saved:', newRestaurant);
     res.status(201).json({ message: 'Restaurant registered successfully' });
   } catch (err) {
     console.error('❌ Restaurant signup error:', err);
-    res.status(500).json({ error: 'Restaurant registration failed' });
+    res.status(500).json({ message: 'Signup failed', error: err.message });
   }
 });
 
@@ -158,4 +161,15 @@ app.post('/adminlogin', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+});
+// ---------- Get Restaurants by City ----------
+app.get('/restaurants', async (req, res) => {
+  const { city } = req.query;
+  try {
+    const list = await Restaurant.find({ city });
+    res.json(list);
+  } catch (err) {
+    console.error('❌ Error fetching restaurants:', err);
+    res.status(500).json({ message: 'Failed to fetch restaurants' });
+  }
 });
