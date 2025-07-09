@@ -203,7 +203,9 @@ app.post('/book', async (req, res) => {
     });
 
     if (alreadyBooked) {
-      return res.status(400).json({ message: 'You have already booked this restaurant on this date.' });
+      return res.status(400).json({
+        message: 'You have already booked this restaurant on this date.'
+      });
     }
 
     const booking = new Booking({ customerPhone, restaurantName, city, date, menu });
@@ -212,7 +214,7 @@ app.post('/book', async (req, res) => {
     res.status(201).json({ message: 'Booking stored successfully' });
   } catch (err) {
     console.error('❌ Booking storage error:', err);
-    res.status(500).json({ message: 'Failed to store booking' });
+    res.status(500).json({ message: 'Something went wrong. Please try again later.' });
   }
 });
 
