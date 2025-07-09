@@ -77,6 +77,7 @@ app.post('/signup', async (req, res) => {
 });
 
 // ---------- Customer Login ----------
+// ✅ Updated Customer Login (sends back name too)
 app.post('/login', async (req, res) => {
   try {
     const { phone, password } = req.body;
@@ -86,7 +87,11 @@ app.post('/login', async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
 
-    res.status(200).json({ message: 'Login successful' });
+    // ✅ Send name in response so frontend can store it
+    res.status(200).json({
+      message: 'Login successful',
+      name: user.name
+    });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
