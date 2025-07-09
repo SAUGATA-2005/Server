@@ -191,26 +191,33 @@ app.post('/book-table', async (req, res) => {
 });
 
 // ---------- Save Booking to DB (with duplicate check) ----------
+// ---------- Save Booking to DB (with duplicate check) ----------
 app.post('/book', async (req, res) => {
   try {
     const { customerPhone, restaurantName, city, date, menu } = req.body;
 
-    const alreadyBooked = await Booking.findOne({
-      customerPhone,
-      restaurantName,
-      date
-    });
-
+    const alreadyBooked = await Booking.findOne({ customerPhone, restaurantName, date });
     if (alreadyBooked) {
       return res.status(400).json({
         message: 'You have already booked this restaurant on this date.'
       });
     }
 
-    const booking = new Booking({ customerPhone, restaurantName, city, date, menu });
-    await booking.save();
+    // 🔍 Get customer name from DB
+    const customer = await Customer.findOne({ phone: customerPhone });
 
+    const booking = new Booking({
+      customerPhone,
+      customerName: customer?.name || 'anonymous',
+      restaurantName,
+      city,
+      date,
+      menu
+    });
+
+    await booking.save();
     res.status(201).json({ message: 'Booking stored successfully' });
+
   } catch (err) {
     console.error('❌ Booking storage error:', err);
     res.status(500).json({ message: 'Something went wrong. Please try again later.' });
