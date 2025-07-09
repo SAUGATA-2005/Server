@@ -10,7 +10,7 @@ const path = require('path');
 const Customer = require('./models/Customer');
 const Restaurant = require('./models/Restaurant');
 const Admin = require('./models/Admin');
-const Booking = require('./models/Booking'); // ✅ new
+const Booking = require('./models/Booking');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -168,7 +168,7 @@ app.get('/restaurants', async (req, res) => {
   }
 });
 
-// ---------- Book Table (Update Restaurant) ----------
+// ---------- Book Table (Reduce Table Count) ----------
 app.post('/book-table', async (req, res) => {
   const { restaurantId } = req.body;
 
@@ -190,7 +190,7 @@ app.post('/book-table', async (req, res) => {
   }
 });
 
-// ---------- Book Table (Store in DB) ----------
+// ---------- Save Booking to DB ----------
 app.post('/book', async (req, res) => {
   try {
     const { customerPhone, restaurantName, city, date, menu } = req.body;
@@ -202,6 +202,20 @@ app.post('/book', async (req, res) => {
   } catch (err) {
     console.error('❌ Booking storage error:', err);
     res.status(500).json({ message: 'Failed to store booking' });
+  }
+});
+
+// ---------- Get Customer Bookings ----------
+app.get('/bookings', async (req, res) => {
+  try {
+    const { customerPhone } = req.query;
+    if (!customerPhone) return res.status(400).json({ message: 'Missing customer phone' });
+
+    const bookings = await Booking.find({ customerPhone });
+    res.json(bookings);
+  } catch (err) {
+    console.error('❌ Fetch bookings error:', err);
+    res.status(500).json({ message: 'Failed to fetch bookings' });
   }
 });
 
