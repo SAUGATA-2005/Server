@@ -184,3 +184,24 @@ app.get('/restaurants', async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch restaurants' });
   }
 });
+// ---------- Book Table ----------
+app.post('/book-table', async (req, res) => {
+  const { restaurantId } = req.body;
+
+  try {
+    const restaurant = await Restaurant.findById(restaurantId);
+    if (!restaurant) return res.status(404).json({ message: 'Restaurant not found' });
+
+    if (restaurant.tables <= 0) {
+      return res.status(400).json({ message: 'No tables available' });
+    }
+
+    restaurant.tables -= 1;
+    await restaurant.save();
+
+    res.status(200).json({ message: 'Table booked successfully' });
+  } catch (err) {
+    console.error('❌ Booking error:', err);
+    res.status(500).json({ message: 'Booking failed' });
+  }
+});
