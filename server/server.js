@@ -14,8 +14,19 @@ const Admin = require('./models/Admin');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
+const allowedOrigins = ['http://localhost:3000', 'https://your-frontend-domain.com'];
+
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
 app.use(express.json());
 
 // Setup multer for photo uploads
@@ -42,7 +53,14 @@ mongoose.connect(process.env.MONGO_URI, {
 // ---------- Customer Signup ----------
 app.post('/signup', async (req, res) => {
   try {
+    console.log('📩 Received signup data:', req.body);
+
     const { name, phone, password } = req.body;
+
+    if (!name || !phone || !password) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
     const existing = await Customer.findOne({ phone });
     if (existing) return res.status(400).json({ message: 'Phone number already registered' });
 
@@ -50,9 +68,12 @@ app.post('/signup', async (req, res) => {
     const newCustomer = new Customer({ name, phone, password: hashedPassword });
 
     await newCustomer.save();
+
+    console.log('✅ New customer saved:', newCustomer);
     res.status(201).json({ message: 'Registered successfully' });
   } catch (err) {
-    res.status(500).json({ error: 'Something went wrong' });
+    console.error('❌ Signup error:', err);
+    res.status(500).json({ message: 'Signup failed', error: err.message });
   }
 });
 
@@ -74,6 +95,9 @@ app.post('/login', async (req, res) => {
 
 // ---------- Restaurant Signup ----------
 app.post('/rsignup', upload.single('photo'), async (req, res) => {
+  console.log('📥 Incoming restaurant signup data:', req.body);
+  console.log('📸 Uploaded file:', req.file);
+
   try {
     const { name, city, menu, contact, password } = req.body;
     const photo = req.file ? req.file.path : null;
@@ -94,10 +118,11 @@ app.post('/rsignup', upload.single('photo'), async (req, res) => {
     });
 
     await newRestaurant.save();
+    console.log('✅ New restaurant saved:', newRestaurant);
     res.status(201).json({ message: 'Restaurant registered successfully' });
   } catch (err) {
     console.error('❌ Restaurant signup error:', err);
-    res.status(500).json({ error: 'Restaurant registration failed' });
+    res.status(500).json({ message: 'Signup failed', error: err.message });
   }
 });
 
