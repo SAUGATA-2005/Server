@@ -190,15 +190,20 @@ app.post('/book-table', async (req, res) => {
   }
 });
 
-// ---------- Save Booking to DB (Only Once Per Restaurant/Date) ----------
+// ---------- Save Booking to DB (with duplicate check) ----------
 app.post('/book', async (req, res) => {
   try {
     const { customerPhone, restaurantName, city, date, menu } = req.body;
 
-    // 🔒 Prevent Duplicate Booking for same customer, restaurant, and date
-    const alreadyBooked = await Booking.findOne({ customerPhone, restaurantName, date });
+    // ✅ Check for duplicate booking
+    const alreadyBooked = await Booking.findOne({
+      customerPhone,
+      restaurantName,
+      date
+    });
+
     if (alreadyBooked) {
-      return res.status(400).json({ message: 'You have already booked this restaurant on this date' });
+      return res.status(400).json({ message: 'You have already booked this restaurant on this date.' });
     }
 
     const booking = new Booking({ customerPhone, restaurantName, city, date, menu });
