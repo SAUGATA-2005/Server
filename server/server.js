@@ -168,24 +168,13 @@ app.get('/restaurants', async (req, res) => {
   }
 });
 
-// ---------- Book Table (with duplicate prevention) ----------
+// ---------- Book Table (Reduce Table Count) ----------
 app.post('/book-table', async (req, res) => {
-  const { restaurantId, customerPhone, date } = req.body;
+  const { restaurantId } = req.body;
 
   try {
     const restaurant = await Restaurant.findById(restaurantId);
     if (!restaurant) return res.status(404).json({ message: 'Restaurant not found' });
-
-    const existingBooking = await Booking.findOne({
-      customerPhone,
-      restaurantName: restaurant.name,
-      city: restaurant.city,
-      date
-    });
-
-    if (existingBooking) {
-      return res.status(400).json({ message: 'You have already booked this restaurant on this date' });
-    }
 
     if (restaurant.tables <= 0) {
       return res.status(400).json({ message: 'No tables available' });
@@ -194,19 +183,31 @@ app.post('/book-table', async (req, res) => {
     restaurant.tables -= 1;
     await restaurant.save();
 
-    const newBooking = new Booking({
-      customerPhone,
-      restaurantName: restaurant.name,
-      city: restaurant.city,
-      date,
-      menu: restaurant.menu
-    });
-    await newBooking.save();
-
     res.status(200).json({ message: 'Table booked successfully' });
   } catch (err) {
     console.error('❌ Booking error:', err);
     res.status(500).json({ message: 'Booking failed' });
+  }
+});
+
+// ---------- Save Booking to DB (Only Once Per Restaurant/Date) ----------
+app.post('/book', async (req, res) => {
+  try {
+    const { customerPhone, restaurantName, city, date, menu } = req.body;
+
+    // 🔒 Prevent Duplicate Booking for same customer, restaurant, and date
+    const alreadyBooked = await Booking.findOne({ customerPhone, restaurantName, date });
+    if (alreadyBooked) {
+      return res.status(400).json({ message: 'You have already booked this restaurant on this date' });
+    }
+
+    const booking = new Booking({ customerPhone, restaurantName, city, date, menu });
+    await booking.save();
+
+    res.status(201).json({ message: 'Booking stored successfully' });
+  } catch (err) {
+    console.error('❌ Booking storage error:', err);
+    res.status(500).json({ message: 'Failed to store booking' });
   }
 });
 
